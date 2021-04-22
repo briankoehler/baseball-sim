@@ -1,34 +1,34 @@
 import simpy
 import player
-from dataclasses import dataclass
+import game
+import team
+import random
 
 
-@dataclass
-class Pitcher:
-    name: str
-    age: int
-    env: simpy.rt.RealtimeEnvironment
+first_names = ['Brian', 'Jacob', 'Jon', 'Zach', 'Adrian', 'Alex', 'Matteen', 'Anthony', 'Nick', 'Trevor', 'Carlos']
+last_names = ['Koehler', 'Francisco', 'Becker', 'Holt', 'Kashef', 'Flowers', 'Story', 'Rodon', 'Wilson', 'Schickler', 'Rodriguez', 'Senzel', 'Glasnow', 'Trout']
+locations = ['New York', 'Jacksonville', 'Gainesville', 'Orlando', 'Tallahassee', 'Atlanta']
+team_names = ['Inters', 'Feeders', 'Ducklings', 'Hammers', 'Gamers', 'Worms']
 
-    def pitch(self):
-        self.env.live_pitch.succeed()
-        print(f'{self.name} pitches a fastball.')
 
-@dataclass
-class Batter:
-    name: str
-    age: int
-    env: simpy.rt.RealtimeEnvironment
+def generate_batter(env):
+    return player.Batter(random.choice(first_names), random.choice(last_names), random.randint(17, 45), env)
 
-    def run(self):
-        yield self.env.live_pitch
-        yield self.env.timeout(3)
-        print(f'{self.name} swings and misses.')
+def generate_pitcher(env):
+    return player.Pitcher(random.choice(first_names), random.choice(last_names), random.randint(17, 45), env)
+
+def generate_team(env):
+    players = []
+    for _ in range(7):
+        new_player = generate_batter(env)
+        players.append(new_player)
+    pitcher = generate_pitcher(env)
+    players.append(pitcher)
+    return team.Team(random.choice(locations), random.choice(team_names), players, players, pitcher)
+
 
 if __name__ == '__main__':
-    env = simpy.rt.RealtimeEnvironment(factor=1)
-    # env.live_pitch = env.event()
-    # tom = Pitcher('Tom', 24, env)
-    # jerry = Batter('Jerry', 22, env)
-    # env.process(jerry.run())
-    # tom.pitch()
-    # env.run()
+    env = simpy.rt.RealtimeEnvironment(factor=1, strict=False)
+    game = game.Game([generate_team(env), generate_team(env)], env)
+    env.process(game.run_game())
+    env.run()
